@@ -26,13 +26,26 @@ def hello():
 @input_error
 def add_contact():
     name = Name(input("Enter the name: "))
-    phone = Phone(input("Enter the phone number: "))
-    birthday = Birthday(input("Enter birthday in format 'DD.MM.YYYY'"))
-    rec: Record = address_book.get(str(name))
+
+    while True:
+        phone_input = input("Enter the phone number (10 digits), or leave empty: ")
+        if not phone_input or (phone_input.isdigit() and len(phone_input) == 10):
+            break
+        print("Invalid phone number. Please enter a 10-digit number.")
+
+    while True:
+        birthday_input = input("Enter birthday in format 'DD.MM.YYYY' (or leave empty if not available): ")
+        if not birthday_input or Record.is_valid_birthday_format(birthday_input):
+            break
+        print("Incorrect birthday format. Please use the format DD.MM.YYYY.")
+
+    phone = Phone(phone_input) if phone_input else None
+    birthday = Birthday(birthday_input) if birthday_input else None
+
+    rec = address_book.get(str(name))
     if rec:
-        rec.add_phone(phone)
-        rec.birthday = birthday
-        return f"Phone number {phone} added for contact {name}. Birthday has also been updated."
+        rec.add_contact(phone, birthday)
+        return f"Phone number and/or birthday updated for contact {name}."
     rec = Record(name, phone, birthday)
     address_book.add_record(rec)
     return f"Contact {name} successfully added."
@@ -78,7 +91,11 @@ def days_to_birthday():
     if rec and rec.birthday:
         days_left = rec.days_to_birthday()
         if days_left is not None:
-            return f"Contact {name} birthday is {days_left} days away."
+            if days_left == 0:
+                return f"Contact {name} birthday is today!"
+            elif days_left == 1:
+                return f"Contact {name} birthday is tomorrow!"
+            return f"Contact {name} birthday is in {days_left} days."
         return f"Contact {name} birthday is today!"
     return f"The contact {name} is not found in the address book or the birthday is not specified."
 
@@ -96,8 +113,9 @@ def edit_birthday():
 
 @input_error
 def show_all():
-    page_number = 1
+    page_number = 0
     batch_size = 5
+
     while True:
         records_batch = list(address_book.iterator(batch_size, page_number))
         if not records_batch:

@@ -38,18 +38,16 @@ class Phone(Field):
 
 
 class Birthday(Field):
-    def __init__(self, value=None):
-        super().__init__(value)
-        self.format = "%d.%m.%Y"
-
     def validate(self, value):
-        try:
-            datetime.strptime(value, self.format)
-        except ValueError:
-            raise ValueError("Incorrect birthday format. Please use the format DD.MM.YYYY")
+        if value:
+            try:
+                datetime.strptime(value, "%d.%m.%Y")
+            except ValueError:
+                raise ValueError("Incorrect birthday format. Please use the format DD.MM.YYYY")
 
-    def get_date(self):
-        return datetime.strptime(self.value, self.format)
+    def to_datetime(self):
+        if self._value:
+            return datetime.strptime(self._value, "%d.%m.%Y")
 
 
 class Record:
@@ -60,11 +58,25 @@ class Record:
             self.phones.append(phone)
         self.birthday = birthday
 
-    def add_phone(self, phone: Phone):
-        if phone.value not in [p.value for p in self.phones]:
+    def add_phone(self, phone=None, birthday=None):
+        if phone and phone.value not in [p.value for p in self.phones]:
             self.phones.append(phone)
-            return f"phone {phone} add to contact {self.name}"
-        return f"{phone} present in phones of contact {self.name}"
+        if birthday:
+            while not self.is_valid_birthday_format(birthday.value):
+                print("Incorrect birthday format. Please use the format DD.MM.YYYY")
+                birthday = Birthday(input("Enter birthday in format 'DD.MM.YYYY' (or leave empty if not available): "))
+            if not self.birthday:
+                self.birthday = birthday
+            else:
+                self.birthday.value = birthday.value
+
+    @staticmethod
+    def is_valid_birthday_format(value):
+        try:
+            datetime.strptime(value, "%d.%m.%Y")
+            return True
+        except ValueError:
+            return False
 
     def del_phone(self, phone: Phone):
         for p in self.phones:
@@ -83,7 +95,7 @@ class Record:
     def days_to_birthday(self):
         if self.birthday:
             today = datetime.now()
-            next_birthday = self.birthday.get_date().replace(year=today.year)
+            next_birthday = self.birthday.to_datetime().replace(year=today.year)
             if next_birthday < today:
                 next_birthday = next_birthday.replace(year=today.year + 1)
             days_remaining = (next_birthday - today).days
