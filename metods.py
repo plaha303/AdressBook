@@ -1,5 +1,6 @@
 from collections import UserDict
 from datetime import datetime
+import pickle
 
 
 class Field:
@@ -139,6 +140,33 @@ class AddressBook(UserDict):
             if match:
                 results.append(record)
         return results
+
+    def search_by_name(self, name_query):
+        results = []
+        for record in self.data.values():
+            if name_query.lower() in str(record.name).lower():
+                results.append(record)
+        return results
+
+    def search_by_phone(self, phone_query):
+        results = []
+        for record in self.data.values():
+            for phone in record.phones:
+                if phone_query in str(phone):
+                    results.append(record)
+                    break
+        return results
+
+    def save_to_file(self, file_path):
+        with open(file_path, 'wb') as f:
+            pickle.dump(self.data, f)
+
+    def load_from_file(self, file_path):
+        try:
+            with open(file_path, 'rb') as f:
+                self.data = pickle.load(f)
+        except FileNotFoundError:
+            self.data = {}
 
     def iterator(self, batch_size, page_number):
         data_values = list(self.data.values())

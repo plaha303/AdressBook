@@ -1,3 +1,5 @@
+import pickle
+
 from metods import AddressBook, Name, Phone, Record, Birthday
 
 address_book = AddressBook()
@@ -113,11 +115,11 @@ def edit_birthday():
 
 @input_error
 def show_all():
-    page_number = 0
+    page_number = 1
     batch_size = 5
 
     while True:
-        records_batch = list(address_book.iterator(batch_size, page_number))
+        records_batch = list(address_book.iterator(batch_size, page_number - 1))
         if not records_batch:
             print("No more contacts to display.")
             break
@@ -136,6 +138,22 @@ def show_all():
             page_number += 1
 
 
+def search_by_name():
+    name_query = input("Enter the name or part of the name to search: ")
+    results = address_book.search_by_name(name_query)
+    if results:
+        return "\n".join(str(record) for record in results)
+    return "No contacts found for the given name."
+
+
+def search_by_phone():
+    phone_query = input("Enter the phone or part of the phone to search: ")
+    results = address_book.search_by_phone(phone_query)
+    if results:
+        return "\n".join(str(record) for record in results)
+    return "No contacts found for the given phone."
+
+
 def helper():
     commands = {
         hello: "hello -> displays a welcome message.",
@@ -147,6 +165,8 @@ def helper():
         del_phone: "del -> delete number from contact.",
         # get_phone: "phone -> displays the phone number of a contact.",
         show_all: "show all -> displays all contacts and their phone numbers.",
+        search_by_name: "search by name -> searches for contacts in which the name coincides",
+        search_by_phone: "search by phone -> looking for contacts with a matching phone number",
         helper: "help -> displays the list of available commands.",
         exit: "exit, close, good bye -> exits the program."
     }
@@ -157,6 +177,13 @@ def helper():
 
 
 def main():
+    file_path = 'address_book.pkl'
+
+    try:
+        address_book.load_from_file(file_path)
+    except pickle.UnpicklingError:
+        print("Failed to load the address book. Starting with an empty address book.")
+
     print("Welcome!")
     commands = {
         "hello": hello,
@@ -168,6 +195,8 @@ def main():
         "del": del_phone,
         # "phone": get_phone,
         "show all": show_all,
+        "search by name": search_by_name,
+        "search by phone": search_by_phone,
         "help": helper,
         "exit": exit,
         "good bye": exit,
@@ -188,6 +217,8 @@ def main():
                 print(func())
         else:
             print("Invalid command. Please try again.")
+
+    address_book.save_to_file(file_path)
 
 
 if __name__ == "__main__":
